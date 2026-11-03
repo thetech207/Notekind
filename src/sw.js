@@ -50,6 +50,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== 'nk-clip-page' && info.menuItemId !== 'nk-clip-sel') return;
+  let res;
   try {
     /* a menu click grants activeTab for this tab — inject and extract */
     const [r] = await chrome.scripting.executeScript({
@@ -57,13 +58,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       files: ['src/clip.js']
     });
     const c = r?.result;
-    if (!c?.md)
-      return chrome.storage.local.set({
-        nkClip: { ok: false, reason: 'nothing captured', at: Date.now() } });
-    const res = await clipWrite(info.menuItemId, c.title, c.url, c.md);
-    await chrome.storage.local.set({ nkClip: { ...res, at: Date.now() } });
+    res = c?.md
+      ? await clipWrite(info.menuItemId, c.title, c.url, c.md)
+      : await clipWrite(info.menuItemId, c?.title || tab?.title || 'clip',
+          c?.url || info.pageUrl || '',
+          '> *(nothing readable captured — link clip only)*');
   } catch (e) {
-    await chrome.storage.local.set({
-      nkClip: { ok: false, reason: e.message, at: Date.now() } });
+    /* injection blocked (chrome://, Web Store, CSP edge) → link-only clip */
+    res = await clipWrite(info.menuItemId, tab?.title || 'clip',
+      info.pageUrl || '',
+      `> *(could not extract page: ${e.message} — link clip only)*`);
   }
+  await chrome.storage.local.set({ nkClip: { ...res, at: Date.now() } });
 });
