@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notekind</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>&#x1F4A1; Notekind</h1>
+    <span class="tag">spike build v0.1.0</span>
+  </header>
+
+  <section class="card">
+    <h2>Vault</h2>
+    <p id="vaultStatus">Checking…</p>
+    <div class="row">
+      <button id="pick">Choose vault folder</button>
+      <button id="reperm">Re-request permission</button>
+      <button id="forget" class="ghost">Forget vault</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Write tests</h2>
+    <div class="row">
+      <button id="wPage">Write file (this page)</button>
+      <button id="wSw">Write file (service worker)</button>
+    </div>
+    <p class="hint">Writes <code>notekind-spike.txt</code> into the vault root.</p>
+    <dl class="results">
+      <dt>Startup write</dt><dd id="startupRes">—</dd>
+      <dt>Context-menu write</dt><dd id="menuRes">—</dd>
+    </dl>
+    <p class="hint">Restart the browser completely, open a new tab, and check
+       <b>Startup write</b> — that result answers whether silent background
+       clipping can work.</p>
+  </section>
+
+  <section class="card">
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
