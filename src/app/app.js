@@ -627,7 +627,7 @@ function emCheck() {
 function emPick(i) {
   const name = emList[i ?? emSel];
   const ins = ':' + name + ':';
-  const start = ta.selectionStart - emFrom;
+  const start = ta.selectionStart - emFrom - 1; /* consume the ':' too */
   ta.value = ta.value.slice(0, start) + ins + ta.value.slice(ta.selectionEnd);
   ta.selectionStart = ta.selectionEnd = start + ins.length;
   emClose();
