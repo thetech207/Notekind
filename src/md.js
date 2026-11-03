@@ -13,7 +13,15 @@ const EMOJI = {
 
 function inline(s) {
   s = esc(s);
-  s = s.replace(/!\[\[([^\]]+)\]\]/g, (m, t) => `<img data-vault="${t}">`);
+  /* ![[img|WxH]] — |300 = width, |x200 = height, |300x200 = both;
+     one dimension alone keeps aspect ratio */
+  s = s.replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (m, t, spec) => {
+    const sz = spec && spec.match(/^(\d*)x?(\d*)$/);
+    const style = sz && (sz[1] || sz[2])
+      ? ` style="${sz[1] ? `width:${sz[1]}px` : ''}${sz[1] && sz[2] ? ';' : ''}${sz[2] ? `height:${sz[2]}px` : ''}"`
+      : '';
+    return `<img data-vault="${t}"${style}>`;
+  });
   s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, src) =>
     /^(https?|data|blob):/.test(src)
       ? `<img alt="${alt}" src="${src}">`
