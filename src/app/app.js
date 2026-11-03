@@ -47,8 +47,8 @@ async function openNote(path, create, newTab) {
   persistTabs();
   renderTabs();
   $('empty').hidden = true;
-  $('preview').hidden = true;
-  ta.hidden = false;
+  ta.hidden = true;
+  $('preview').hidden = false;
   ta.value = rec.text;
   $('notePath').textContent = path;
   idbSet('lastPath', path);
