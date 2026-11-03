@@ -226,6 +226,13 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #emoji .em.sel, #emoji .em:hover { background: #3a4048; }
 #emoji .em .n { font-size: 10px; color: var(--dim); display: block; text-align: center; }
 
+/* slim dark scrollbars everywhere */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+::-webkit-scrollbar-track { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
 /* print: preview only */
 @media print {
   #side, #tabbar, #topbar, #editor, #empty, #debug, #ctxMenu, #emoji { display: none !important; }
