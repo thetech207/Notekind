@@ -6,13 +6,16 @@ const slug = t => (t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
 /* Write a clip note: IDB always succeeds silently; mirrors to .md in
    the vault when its permission is 'granted' this session. */
-async function clipWrite(source, title, url, body) {
+async function clipWrite(source, title, url, body, meta = {}) {
   try {
     const d = new Date();
     const name = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
       ` ${pad(d.getHours())}${pad(d.getMinutes())} ${slug(title)}.md`;
     const path = 'clips/' + name;
-    const text = `# ${title}\n> Source: ${url} — clipped ${d.toLocaleString()}\n\n${body}\n`;
+    const text = `# ${title}\n> Source: ${url} — clipped ${d.toLocaleString()}` +
+      (meta.byline ? `\n> ${meta.byline}` : '') +
+      (meta.excerpt ? `\n> ${meta.excerpt}` : '') +
+      `\n\n${body}\n`;
     const r = await writeNote(path, text);
     return { ok: true, source, path, mirrored: r.mirrored };
   } catch (e) {
@@ -55,11 +58,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     /* a menu click grants activeTab for this tab — inject and extract */
     const [r] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ['src/clip.js']
+      files: ['src/vendor/Readability.js', 'src/vendor/turndown.js',
+              'src/vendor/turndown-plugin-gfm.js', 'src/clip.js']
     });
     const c = r?.result;
     res = c?.md
-      ? await clipWrite(info.menuItemId, c.title, c.url, c.md)
+      ? await clipWrite(info.menuItemId, c.title, c.url, c.md,
+          { byline: c.byline, excerpt: c.excerpt })
       : await clipWrite(info.menuItemId, c?.title || tab?.title || 'clip',
           c?.url || info.pageUrl || '',
           '> *(nothing readable captured — link clip only)*');
