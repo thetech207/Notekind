@@ -9,33 +9,37 @@
 <body>
   <header>
     <h1>&#x1F4A1; Notekind</h1>
-    <span class="tag">spike build v0.1.0</span>
+    <span class="tag">storage-layer build v0.1.0</span>
   </header>
 
   <section class="card">
-    <h2>Vault</h2>
-    <p id="vaultStatus">Checking…</p>
+    <h2>Notes <span id="noteCount" class="dim"></span></h2>
+    <p class="hint">Notes live in IndexedDB — no permission needed, ever.
+       Plain <code>.md</code> files are produced on export or via vault sync.</p>
     <div class="row">
-      <button id="pick">Choose vault folder</button>
-      <button id="reperm">Re-request permission</button>
-      <button id="forget" class="ghost">Forget vault</button>
+      <button id="export">Export vault (.zip)</button>
+      <button id="wPage">Write test note</button>
+      <button id="wSw">Write test (service worker)</button>
     </div>
+    <pre id="noteList"></pre>
   </section>
 
   <section class="card">
-    <h2>Write tests</h2>
+    <h2>Vault sync</h2>
+    <p id="vaultStatus">Checking…</p>
     <div class="row">
-      <button id="wPage">Write file (this page)</button>
-      <button id="wSw">Write file (service worker)</button>
+      <button id="pick">Choose vault folder</button>
+      <button id="sync">Enable sync</button>
+      <button id="import" class="ghost">Import files → IDB</button>
+      <button id="forget" class="ghost">Forget vault</button>
     </div>
-    <p class="hint">Writes <code>notekind-spike.txt</code> into the vault root.</p>
+    <p class="hint">When sync is on, every write also lands as a real
+       <code>.md</code> file — readable by Tektite and Obsidian. Permission
+       needs one gesture per browser session.</p>
     <dl class="results">
       <dt>Startup write</dt><dd id="startupRes">—</dd>
       <dt>Context-menu write</dt><dd id="menuRes">—</dd>
     </dl>
-    <p class="hint">Restart the browser completely, open a new tab, and check
-       <b>Startup write</b> — that result answers whether silent background
-       clipping can work.</p>
   </section>
 
   <section class="card">

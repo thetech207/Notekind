@@ -10,21 +10,35 @@ journal + web clipper. Sister project to Tektite
 
 - **MV3, no build step.** Vanilla ES modules; `"type": "module"`
   service worker allows static imports in `src/sw.js`.
+- **Storage model** (decided 2026-11-03, spike result): IndexedDB is the
+  source of truth — no permission model, silent writes everywhere
+  including the service worker. `src/store.js` is the single entry
+  point: notes keyed by vault-relative path (`YYYY/MM - Month/
+  YYYY-MM-DD.md`), attachments in the `blobs` store.
+- **Vault mirror** (opt-in): a FileSystemDirectoryHandle persisted in
+  IDB `kv`/`vault`. Handle survives restarts but `readwrite` permission
+  returns to `prompt` each session (verified in Vivaldi via the
+  onStartup spike → `permission-prompt`). When `queryPermission` says
+  `granted`, every write mirrors to real `.md` files via `mirrorWrite`;
+  `mirrorAll` reconciles bulk. One gesture per session enables it.
+- **Export**: `exportZip()` → all notes+blobs as a `.zip` of plain
+  `.md`/files via vendored `fflate` (`src/vendor/fflate.js`, 0.8.2).
+  Page-side `<a download>`; `downloads` permission is reserved for a
+  future scheduled SW backup.
+- **Import**: `importVault(dir)` walks a Tektite/Obsidian folder into
+  IDB (`.md` → notes, rest → blobs) — the migration/onboarding path.
+- **Data-loss caveat**: uninstalling the extension wipes IndexedDB —
+  users on internal-only storage must export or enable sync. Call this
+  out in UX; don't bury it.
 - **CSP**: extension pages forbid inline `<script>` and inline event
   handlers — all JS lives in `.js` files wired via `addEventListener`.
-  Inline `<style>`/`style.css` is fine.
-- **Vault access**: File System Access API (`showDirectoryPicker`,
-  `getDirectoryHandle`, `createWritable`) — same mechanism Tektite uses.
-  The handle is persisted in IndexedDB (`notekind` DB, `kv` store via
-  `src/idb.js`) and shared between extension pages and the service
-  worker (same `chrome-extension://` origin).
-- **Key open question** (the spike): whether `readwrite` permission on a
-  persisted handle survives browser restart such that the SW can write
-  silently. `sw.js` tests via `onStartup` (no gesture) and
-  `contextMenus.onClicked` (SW gesture); results land in
-  `chrome.storage.local` keys `nkStartup` / `nkMenuTest` shown on the
-  spike page. If silent writes fail, plan B is a small confirm page
-  opened per clip.
+- **Popup gotcha**: never put the picker in a toolbar `action` popup —
+  popups close when a file picker opens. Use the new-tab page, side
+  panel, or options page for vault selection.
+- **Vivaldi**: ignores `chrome_url_overrides.newtab` (shows its Start
+  Page). Document the "Settings → Tabs → New Tab Page → Specific Page →
+  chrome-extension://<id>/src/app/index.html" workaround; side panel /
+  action button matter more for Vivaldi coverage.
 - **Popup gotcha**: never put the picker in a toolbar `action` popup —
   popups close when a file picker opens. Use the new-tab page, side
   panel, or options page for vault selection.

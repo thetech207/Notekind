@@ -11,7 +11,7 @@
   "chrome_url_overrides": {
     "newtab": "src/app/index.html"
   },
-  "permissions": ["storage", "contextMenus"],
+  "permissions": ["storage", "contextMenus", "downloads"],
   "action": {
     "default_title": "Notekind"
   },

@@ -1,29 +1,19 @@
-import { idbGet } from './idb.js';
+import { writeNote, vaultState } from './store.js';
 
-const SPIKE_FILE = 'notekind-spike.txt';
+const SPIKE_FILE = 'notekind-spike.md';
 
-/* Core spike: can a service worker write to a stored directory handle
-   without a window and without a user gesture? Returns a result object
-   describing how far it got. */
+/* Write a note via the store: IDB write always succeeds silently (no
+   permission model on IndexedDB). Vault mirroring only happens when the
+   handle's readwrite permission is 'granted' this session. */
 async function testWrite(source) {
-  const h = await idbGet('vault');
-  if (!h) return { ok: false, source, reason: 'no-handle' };
-  let state = 'unknown';
+  const { handle, state } = await vaultState();
   try {
-    state = await h.queryPermission({ mode: 'readwrite' });
+    const r = await writeNote(
+      SPIKE_FILE,
+      `notekind write via ${source} @ ${new Date().toISOString()}\n`);
+    return { ok: true, source, mirrored: r.mirrored, vault: state };
   } catch (e) {
-    return { ok: false, source, reason: `queryPermission failed: ${e.message}` };
-  }
-  if (state !== 'granted')
-    return { ok: false, source, reason: `permission-${state}`, state };
-  try {
-    const fh = await h.getFileHandle(SPIKE_FILE, { create: true });
-    const w = await fh.createWritable();
-    await w.write(`notekind write via ${source} @ ${new Date().toISOString()}\n`);
-    await w.close();
-    return { ok: true, source, state };
-  } catch (e) {
-    return { ok: false, source, reason: `write failed (${e.name}): ${e.message}`, state };
+    return { ok: false, source, reason: `${e.name}: ${e.message}`, vault: handle ? state : 'none' };
   }
 }
 
@@ -34,17 +24,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-/* THE critical experiment: write to the vault at browser startup —
-   no window, no gesture. If this works after a restart, silent
-   background clipping is viable. Result is recorded for the app page. */
+/* Demonstrates the model at browser startup: the IDB write lands with
+   no gesture at all; mirroring only kicks in if permission persisted. */
 chrome.runtime.onStartup.addListener(async () => {
   const r = await testWrite('onStartup');
   await chrome.storage.local.set({ nkStartup: { ...r, at: Date.now() } });
 });
 
-/* Context-menu path: a menu click IS a user gesture delivered to the
-   service worker. Tests whether SW writes work on-gesture, and whether
-   requestPermission can prompt from a worker when state is 'prompt'. */
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'nk-clip-test',
@@ -55,24 +41,11 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async info => {
   if (info.menuItemId !== 'nk-clip-test') return;
-  const h = await idbGet('vault');
-  if (!h) {
-    await chrome.storage.local.set({
-      nkMenuTest: { ok: false, source: 'contextmenu', reason: 'no-handle', at: Date.now() }
-    });
-    return;
-  }
-  let state = 'unknown';
-  try {
-    state = await h.queryPermission({ mode: 'readwrite' });
-    if (state === 'prompt') {
-      /* does a permission prompt work from a worker on this gesture? */
-      state = await h.requestPermission({ mode: 'readwrite' });
-    }
-  } catch (e) {
-    const r = { ok: false, source: 'contextmenu', reason: `permission flow threw: ${e.message}`, state };
-    await chrome.storage.local.set({ nkMenuTest: { ...r, at: Date.now() } });
-    return;
+  /* A menu click IS a gesture delivered to the SW — try upgrading a
+     'prompt' handle here so this clip can also mirror to disk. */
+  const { handle, state } = await vaultState();
+  if (handle && state === 'prompt') {
+    try { await handle.requestPermission({ mode: 'readwrite' }); } catch {}
   }
   const r = await testWrite('contextmenu');
   await chrome.storage.local.set({ nkMenuTest: { ...r, at: Date.now() } });

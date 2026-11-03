@@ -54,3 +54,13 @@ code { background: #111417; padding: 1px 5px; border-radius: 4px; font-size: 12p
   margin: 0;
   color: var(--text);
 }
+#noteList {
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  white-space: pre-wrap;
+  color: var(--dim);
+  margin: 12px 0 0;
+  max-height: 160px;
+  overflow: auto;
+}
+.ok { color: #7bc96f; font-size: 13px; }

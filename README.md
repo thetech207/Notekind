@@ -28,42 +28,50 @@ carry over.
 3. **Load unpacked** → select the `Notekind/` folder
 4. Open a new tab — the Notekind page replaces it
 
-## Spike test
+## How it stores notes
 
-The whole architecture hinges on one question: **can a service worker
-write to a persisted File System Access handle without a user gesture?**
+**IndexedDB is the source of truth** — notes are stored internally,
+keyed by their vault-relative path, so silent writes work everywhere
+(service worker included) with zero permission prompts.
 
-To answer it:
+- **Export** — one click produces a `.zip` of plain `.md` files in
+  Tektite's vault layout
+- **Vault sync** (optional) — pick a folder once; when permission is
+  granted (one click per session), every write also lands as a real
+  `.md` file readable by Tektite and Obsidian
+- **Import** — point it at an existing Tektite/Obsidian vault to bring
+  your notes in
 
-1. New tab → **Choose vault folder** → pick a directory, grant
-   read/write
-2. **Write file (this page)** and **Write file (service worker)** —
-   confirm `notekind-spike.txt` appears in the folder
-3. **Restart the browser completely**, open a new tab
-4. Check **Startup write**: `ok:true` means silent background clipping
-   is viable; `permission-prompt` means we need a confirm-page fallback
-5. Right-click any page → **Notekind: test vault write** → check
-   **Context-menu write** — tests the on-gesture SW path and whether
-   `requestPermission` can prompt from a worker
+> ⚠️ Uninstalling the extension wipes IndexedDB. Export regularly or
+> keep vault sync on.
+
+Spike result: handle permission resets to `prompt` each session —
+silent vault writes at startup are not possible; hence IDB-first.
 
 ## Layout
 
 ```
 manifest.json        MV3: module service worker, newtab override,
-                     contextMenus + storage permissions
+                     storage + contextMenus + downloads permissions
 src/
-  sw.js              service worker — write tests, startup/menu hooks
-  idb.js             IndexedDB KV store (shared: pages + SW)
+  sw.js              service worker — writes via store (IDB + mirror)
+  idb.js             IndexedDB layer (kv, notes, blobs stores)
+  store.js           storage model: notes CRUD, vault mirror,
+                     import/export
+  vendor/fflate.js   zip for export (vendored, MIT)
   app/
-    index.html       new-tab spike page
-    app.js           vault picker, write tests, result display
+    index.html       new-tab page
+    app.js           vault picker, sync/import/export, tests
     style.css
 icons/
 ```
 
 ## Roadmap
 
-1. ~~Spike: silent SW writes to persisted handle~~ ← you are here
+1. ~~Spike: silent SW writes to persisted handle~~ — result:
+   `permission-prompt` per session, so IDB-first architecture
+2. ~~Storage layer: IDB source of truth + vault mirror + zip export~~
+   ← you are here
 2. Skeleton: real new-tab journal (daily note editor)
 3. Port Tektite core: tree, preview, wikilinks, tasks, calendar
 4. Clipper: context menu → Readability/Defuddle → Turndown →
