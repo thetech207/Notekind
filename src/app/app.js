@@ -677,6 +677,15 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* clip results land in storage — log them and refresh the tree */
+chrome.storage.onChanged.addListener(ch => {
+  if (!ch.nkClip) return;
+  const c = ch.nkClip.newValue;
+  log(c.ok ? `clip → ${c.path}${c.mirrored ? ' (synced)' : ''}`
+           : `clip failed: ${c.reason}`);
+  refreshTree();
+});
+
 /* ---------- boot ---------- */
 
 (async () => {
