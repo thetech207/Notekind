@@ -52,8 +52,18 @@ export async function deleteNote(path, { mirror = true } = {}) {
   return { stored: true, mirrored };
 }
 
-export const putBlob = (p, blob) =>
-  dbPut(STORES.blobs, { path: p, blob, mtime: Date.now() }, p);
+export async function putBlob(p, blob, { mirror = true } = {}) {
+  await dbPut(STORES.blobs, { path: p, blob, mtime: Date.now() }, p);
+  let mirrored = false;
+  if (mirror) {
+    const { handle, state } = await vaultState();
+    if (handle && state === 'granted') {
+      await mirrorWrite(handle, p, blob);
+      mirrored = true;
+    }
+  }
+  return { stored: true, mirrored };
+}
 export const getBlob = p => dbGet(STORES.blobs, p);
 
 /* ---------- vault mirror ---------- */

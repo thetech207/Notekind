@@ -1,6 +1,6 @@
 import { idbGet, idbSet, idbDel } from '../idb.js';
 import { writeNote, readNote, listNotes, vaultState, mirrorAll,
-         importVault, exportZip, getBlob } from '../store.js';
+         importVault, exportZip, getBlob, putBlob } from '../store.js';
 import { md } from '../md.js';
 import { dayPath, dayLabel, isDateName, dateNamePath, MONTHS, pad } from '../dates.js';
 import { attach } from '../editor.js';
@@ -301,6 +301,44 @@ async function enableSync() {
 /* ---------- wiring ---------- */
 
 attach(ta);
+
+/* paste/drop files → attachments/<name> blob + ![[name]] embed.
+   Only handles real File items — a clipboard holding a path as text
+   can't be imported (browsers can't read arbitrary disk paths). */
+function insertAtCursor(text) {
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + text.length;
+  ta.dispatchEvent(new Event('input'));
+}
+
+async function importFiles(files) {
+  for (const f of files) {
+    let name = f.name || `pasted-${Date.now()}`;
+    let p = `attachments/${name}`, i = 1;
+    while (await getBlob(p)) {
+      const m = name.match(/^(.*?)(\.[^.]*)?$/);
+      p = `attachments/${m[1]} ${i++}${m[2] || ''}`;
+    }
+    await putBlob(p, f);
+    insertAtCursor(`![[${p.split('/').pop()}]]`);
+    setStatus(`Imported ${p}`);
+  }
+}
+
+ta.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (!files.length) return;
+  e.preventDefault();
+  importFiles(files);
+});
+ta.addEventListener('dragover', e => e.preventDefault());
+ta.addEventListener('drop', e => {
+  const files = [...(e.dataTransfer?.files || [])];
+  if (!files.length) return;
+  e.preventDefault();
+  importFiles(files);
+});
 
 ta.addEventListener('input', () => {
   setStatus('Unsaved…');
