@@ -49,6 +49,7 @@ async function openNote(path, create, newTab) {
   $('empty').hidden = true;
   ta.hidden = true;
   $('preview').hidden = false;
+  revealPath(path);
   ta.value = rec.text;
   $('notePath').textContent = path;
   idbSet('lastPath', path);
@@ -683,8 +684,17 @@ chrome.storage.onChanged.addListener(ch => {
   const c = ch.nkClip.newValue;
   log(c.ok ? `clip → ${c.path}${c.mirrored ? ' (synced)' : ''}`
            : `clip failed: ${c.reason}`);
+  if (c.ok) revealPath(c.path);
   refreshTree();
 });
+
+/* expand all ancestor dirs of a path so its file is visible */
+function revealPath(path) {
+  const segs = path.split('/');
+  for (let i = 1; i < segs.length; i++)
+    openDirs.add(segs.slice(0, i).join('/'));
+  persistDirs();
+}
 
 /* ---------- boot ---------- */
 
