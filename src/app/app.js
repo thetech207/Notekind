@@ -10,6 +10,7 @@ const ta = $('editor');
 const VAULT_KEY = 'vault';
 
 let curPath = null, saveTimer = null;
+let tabs = [], curTab = -1;
 let noteIndex = new Map();   // basename lowercase, no .md → path
 const imgUrls = [];
 
@@ -28,7 +29,7 @@ async function rebuildIndex() {
   return notes;
 }
 
-async function openNote(path, create) {
+async function openNote(path, create, newTab) {
   await flushSave();
   let rec = await readNote(path);
   if (!rec) {
@@ -41,6 +42,10 @@ async function openNote(path, create) {
     await refreshTree();
   }
   curPath = path;
+  if (newTab || !tabs.length) { tabs.push({ path }); curTab = tabs.length - 1; }
+  else tabs[curTab].path = path;
+  persistTabs();
+  renderTabs();
   ta.value = rec.text;
   $('notePath').textContent = path;
   idbSet('lastPath', path);
@@ -60,12 +65,59 @@ function flushSave() {
   return curPath ? writeNote(curPath, ta.value).then(() => {}) : Promise.resolve();
 }
 
-async function openDay(d) {
+async function openDay(d, newTab) {
   const p = dayPath(d);
   if (!(await readNote(p)))
     await writeNote(p, '# ' + dayLabel(d) + '\n\n');
   await refreshTree();
-  await openNote(p, true);
+  await openNote(p, true, newTab);
+}
+
+/* ---------- tabs ---------- */
+
+function persistTabs() {
+  idbSet('openTabs', tabs.map(t => t.path));
+  idbSet('curTab', curTab);
+}
+
+function renderTabs() {
+  const el = $('tabs');
+  el.textContent = '';
+  tabs.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'tab' + (i === curTab ? ' cur' : '');
+    d.title = t.path;
+    const base = t.path.split('/').pop().replace(/\.md$/, '');
+    d.textContent = isDateName(base) ? dayLabel(new Date(base + 'T12:00:00')) : base;
+    d.onclick = () => switchTab(i);
+    const x = document.createElement('button');
+    x.className = 'x'; x.textContent = '✕';
+    x.onclick = e => { e.stopPropagation(); closeTab(i); };
+    d.appendChild(x);
+    el.appendChild(d);
+  });
+}
+
+async function switchTab(i) {
+  if (i === curTab || !tabs[i]) return;
+  await flushSave();
+  curTab = i;
+  persistTabs();
+  await openNote(tabs[i].path);
+}
+
+async function closeTab(i) {
+  const wasCur = i === curTab;
+  tabs.splice(i, 1);
+  if (i < curTab) curTab--;
+  else if (wasCur) curTab = Math.min(i, tabs.length - 1);
+  if (!tabs.length) {
+    curTab = -1;
+    persistTabs(); renderTabs();
+    return openDay(new Date());
+  }
+  persistTabs(); renderTabs();
+  if (wasCur) await openNote(tabs[curTab].path);
 }
 
 /* ---------- tree ---------- */
@@ -115,7 +167,8 @@ function renderNode(node, prefix, depth, el) {
       f.textContent = dayLabel(d);
     } else f.textContent = base;
     f.title = p;
-    f.onclick = () => openNote(p);
+    f.onclick = e => openNote(p, undefined, e.ctrlKey || e.metaKey);
+    f.onauxclick = e => { if (e.button === 1) openNote(p, undefined, true); };
     el.appendChild(f);
   }
 }
@@ -264,12 +317,82 @@ $('forget').onclick = async () => {
   refreshVault();
 };
 
+/* ---------- quick open ---------- */
+
+let qItems = [], qHits = [], qSel = 0;
+
+async function openQuick() {
+  qItems = (await listNotes()).map(n => n.path).sort();
+  qSel = 0;
+  $('quick').hidden = false;
+  $('qInput').value = '';
+  renderQuick('');
+  $('qInput').focus();
+}
+function closeQuick() { $('quick').hidden = true; ta.focus(); }
+
+function renderQuick(q) {
+  const ql = q.toLowerCase();
+  qHits = qItems.filter(p => p.toLowerCase().includes(ql)).slice(0, 30);
+  qSel = Math.min(qSel, Math.max(qHits.length - 1, 0));
+  const el = $('qList');
+  el.textContent = '';
+  if (!qHits.length) {
+    el.innerHTML = '<div class="none">no notes match</div>';
+    return;
+  }
+  qHits.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'q' + (i === qSel ? ' sel' : '');
+    const base = p.split('/').pop().replace(/\.md$/, '');
+    const label = isDateName(base) ? dayLabel(new Date(base + 'T12:00:00')) : base;
+    d.innerHTML = `${label}<span class="p">${p}</span>`;
+    d.onclick = () => { closeQuick(); openNote(p); };
+    el.appendChild(d);
+  });
+}
+
+$('qInput').addEventListener('input', () => { qSel = 0; renderQuick($('qInput').value); });
+$('qInput').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); closeQuick(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); qSel = Math.min(qSel + 1, qHits.length - 1); renderQuick($('qInput').value); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); qSel = Math.max(qSel - 1, 0); renderQuick($('qInput').value); }
+  else if (e.key === 'Enter' && qHits[qSel]) {
+    e.preventDefault();
+    const p = qHits[qSel];
+    closeQuick();
+    openNote(p, undefined, e.ctrlKey || e.metaKey);
+  }
+});
+$('quick').addEventListener('click', e => { if (e.target === $('quick')) closeQuick(); });
+$('quickBtn').onclick = openQuick;
+$('newTab').onclick = () => openDay(new Date(), true);
+
+/* ---------- global shortcuts ---------- */
+
+document.addEventListener('keydown', e => {
+  if (!$('quick').hidden) return;   /* modal owns keys while open */
+  /* Ctrl+E is browser-reserved (omnibox) — page may never see it;
+     Alt+P is the reliable fallback. Same for Ctrl+P vs Alt+O. */
+  if ((e.ctrlKey && e.code === 'KeyE') || (e.altKey && e.code === 'KeyP')) {
+    e.preventDefault(); $('prevBtn').click();
+  } else if ((e.ctrlKey && e.code === 'KeyP') || (e.altKey && e.code === 'KeyO')) {
+    e.preventDefault(); openQuick();
+  } else if (e.ctrlKey && e.code === 'KeyS') {
+    e.preventDefault(); flushSave().then(() => setStatus('Saved'));
+  }
+});
+
 /* ---------- boot ---------- */
 
 (async () => {
   await refreshTree();
   await refreshVault();
-  const last = await idbGet('lastPath');
-  if (last && await readNote(last)) await openNote(last);
+  const saved = (await idbGet('openTabs')) || [];
+  const savedCur = (await idbGet('curTab')) || 0;
+  for (const p of saved)
+    if (await readNote(p)) tabs.push({ path: p });
+  curTab = Math.min(savedCur, Math.max(tabs.length - 1, 0));
+  if (tabs.length) await openNote(tabs[curTab].path);
   else await openDay(new Date());
 })();

@@ -71,6 +71,27 @@ code { background: #111417; padding: 1px 5px; border-radius: 4px; font-size: 12p
 
 /* ---------- main ---------- */
 main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#tabbar {
+  display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  min-height: 34px;
+}
+#tabs { flex: 1; display: flex; overflow-x: auto; }
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--dim);
+}
+.tab.cur { color: var(--text); background: var(--bg); box-shadow: 0 -2px 0 var(--accent) inset; }
+.tab .x { border: 0; background: none; color: var(--dim); font-size: 12px; padding: 0 2px; }
+.tab .x:hover { color: var(--text); }
+#newTab { border: 0; background: none; color: var(--dim); font-size: 16px; padding: 0 10px; }
+#newTab:hover { color: var(--text); }
 #topbar {
   display: flex; align-items: center; gap: 12px;
   padding: 8px 16px;
@@ -122,3 +143,30 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #preview .wikilink { color: var(--accent); text-decoration: none;
   border-bottom: 1px dotted var(--accent); cursor: pointer; }
 #preview mark { background: #6b5a00; color: var(--text); padding: 0 2px; border-radius: 3px; }
+
+/* ---------- quick open ---------- */
+#quick {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 12vh;
+  z-index: 50;
+}
+#quick[hidden] { display: none; }
+#qInput {
+  width: min(560px, 90vw);
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px 8px 0 0;
+  padding: 12px 14px; font-size: 15px; outline: none;
+}
+#qList {
+  width: min(560px, 90vw);
+  max-height: 50vh; overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border); border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+#qList .q { padding: 8px 14px; font-size: 14px; cursor: pointer; }
+#qList .q .p { display: block; font-size: 11px; color: var(--dim); }
+#qList .q.sel { background: #3a4048; }
+#qList .none { padding: 10px 14px; color: var(--dim); font-size: 13px; }

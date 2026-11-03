@@ -28,14 +28,20 @@
     </details>
   </aside>
   <main>
+    <div id="tabbar"><span id="tabs"></span><button id="newTab" title="New tab">+</button></div>
     <div id="topbar">
       <span id="notePath"></span>
       <span id="status"></span>
-      <button id="prevBtn" class="ghost" title="Toggle preview">Preview</button>
+      <button id="prevBtn" class="ghost" title="Toggle preview (Alt+P)">Preview</button>
+      <button id="quickBtn" class="ghost" title="Quick open (Alt+O / Ctrl+P)">Open…</button>
     </div>
     <textarea id="editor" spellcheck="true" placeholder="Start writing…"></textarea>
     <div id="preview" hidden></div>
   </main>
+  <div id="quick" hidden>
+    <input id="qInput" placeholder="Quick open — type a note name…" autocomplete="off">
+    <div id="qList"></div>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
