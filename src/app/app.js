@@ -606,7 +606,7 @@ function caretXY() {
 
 function emClose() { emEl.hidden = true; emList = []; }
 function emCheck() {
-  const m = ta.value.slice(0, ta.selectionStart).match(/:([a-z_]{2,})$/);
+  const m = ta.value.slice(0, ta.selectionStart).match(/:([a-z_]*)$/);
   if (!m) return emClose();
   emList = Object.keys(EMOJI).filter(k => k.startsWith(m[1])).slice(0, 8);
   if (!emList.length) return emClose();
