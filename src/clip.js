@@ -15,9 +15,21 @@
       d.appendChild(sel.getRangeAt(i).cloneContents());
     html = d.innerHTML;
     isSel = true;
-  } else if (typeof Readability === 'function') {
-    const art = new Readability(document.cloneNode(true)).parse();
-    if (art && art.content) {
+  } else {
+    /* Readability is tuned for articles — on product/app pages it can
+       extract a confident fragment. Only accept it if the page looks
+       article-like AND it kept a decent share of the body's text. */
+    let art = null;
+    if (typeof Readability === 'function') {
+      try {
+        if (!Readability.isProbablyReaderable ||
+            Readability.isProbablyReaderable(document.cloneNode(true)))
+          art = new Readability(document.cloneNode(true)).parse();
+      } catch {}
+    }
+    const artLen = (art?.textContent || '').trim().length;
+    const bodyLen = document.body.innerText.trim().length;
+    if (art && art.content && artLen > Math.min(800, bodyLen * 0.3)) {
       html = art.content;
       title = art.title || title;
       meta.byline = art.byline;
@@ -25,7 +37,7 @@
     }
   }
 
-  /* Readability failed or missing → crude main-content grab */
+  /* Readability failed/rejected → crude main-content grab */
   if (!html) {
     const root = document.querySelector('article') ||
                  document.querySelector('main') || document.body;
