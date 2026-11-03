@@ -7,46 +7,35 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>&#x1F4A1; Notekind</h1>
-    <span class="tag">storage-layer build v0.1.0</span>
-  </header>
-
-  <section class="card">
-    <h2>Notes <span id="noteCount" class="dim"></span></h2>
-    <p class="hint">Notes live in IndexedDB — no permission needed, ever.
-       Plain <code>.md</code> files are produced on export or via vault sync.</p>
-    <div class="row">
-      <button id="export">Export vault (.zip)</button>
-      <button id="wPage">Write test note</button>
-      <button id="wSw">Write test (service worker)</button>
+  <aside id="side">
+    <div id="sideHead">&#x1F4A1; Notekind</div>
+    <div class="sideBtns">
+      <button id="today">Today</button>
+      <button id="newNote" class="ghost">+ Note</button>
     </div>
-    <pre id="noteList"></pre>
-  </section>
-
-  <section class="card">
-    <h2>Vault sync</h2>
-    <p id="vaultStatus">Checking…</p>
-    <div class="row">
-      <button id="pick">Choose vault folder</button>
-      <button id="sync">Enable sync</button>
-      <button id="import" class="ghost">Import files → IDB</button>
-      <button id="forget" class="ghost">Forget vault</button>
+    <div id="tree"></div>
+    <div id="vaultBar"></div>
+    <details id="debug">
+      <summary>Debug</summary>
+      <div class="row">
+        <button id="pick" class="ghost">Choose vault</button>
+        <button id="sync" class="ghost">Enable sync</button>
+        <button id="import" class="ghost">Import vault</button>
+        <button id="export" class="ghost">Export .zip</button>
+        <button id="forget" class="ghost">Forget</button>
+      </div>
+      <pre id="log"></pre>
+    </details>
+  </aside>
+  <main>
+    <div id="topbar">
+      <span id="notePath"></span>
+      <span id="status"></span>
+      <button id="prevBtn" class="ghost" title="Toggle preview">Preview</button>
     </div>
-    <p class="hint">When sync is on, every write also lands as a real
-       <code>.md</code> file — readable by Tektite and Obsidian. Permission
-       needs one gesture per browser session.</p>
-    <dl class="results">
-      <dt>Startup write</dt><dd id="startupRes">—</dd>
-      <dt>Context-menu write</dt><dd id="menuRes">—</dd>
-    </dl>
-  </section>
-
-  <section class="card">
-    <h2>Log</h2>
-    <pre id="log"></pre>
-  </section>
-
+    <textarea id="editor" spellcheck="true" placeholder="Start writing…"></textarea>
+    <div id="preview" hidden></div>
+  </main>
   <script type="module" src="app.js"></script>
 </body>
 </html>
