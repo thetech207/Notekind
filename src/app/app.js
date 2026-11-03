@@ -55,6 +55,7 @@ async function openNote(path, create, newTab) {
   renderPreview();
   markTreeCur();
   setStatus('');
+  ta.focus();
 }
 
 function save() {
