@@ -2,7 +2,7 @@ import { idbGet, idbSet, idbDel } from '../idb.js';
 import { writeNote, readNote, listNotes, vaultState, mirrorAll,
          importVault, exportZip, getBlob } from '../store.js';
 import { md } from '../md.js';
-import { dayPath, dayLabel, isDateName, dateNamePath } from '../dates.js';
+import { dayPath, dayLabel, isDateName, dateNamePath, MONTHS, pad } from '../dates.js';
 import { attach } from '../editor.js';
 
 const $ = id => document.getElementById(id);
@@ -46,6 +46,9 @@ async function openNote(path, create, newTab) {
   else tabs[curTab].path = path;
   persistTabs();
   renderTabs();
+  $('empty').hidden = true;
+  $('preview').hidden = true;
+  ta.hidden = false;
   ta.value = rec.text;
   $('notePath').textContent = path;
   idbSet('lastPath', path);
@@ -178,6 +181,37 @@ async function refreshTree() {
   const tree = $('tree');
   tree.textContent = '';
   renderNode(nest(notes.map(n => n.path)), '', 0, tree);
+  renderCal(notes);
+}
+
+/* ---------- calendar ---------- */
+
+const _now = new Date();
+let calY = _now.getFullYear(), calM = _now.getMonth();
+
+function renderCal(notes) {
+  const dates = new Set(notes
+    .map(n => n.path.split('/').pop().replace(/\.md$/, ''))
+    .filter(isDateName));
+  const startDay = new Date(calY, calM, 1).getDay();
+  const daysIn = new Date(calY, calM + 1, 0).getDate();
+  const todayStr = dayPath(new Date()).split('/').pop().replace('.md', '');
+  let html = `<div id="calHead"><button id="calPrev" class="ghost">‹</button>` +
+    `<span>${MONTHS[calM]} ${calY}</span><button id="calNext" class="ghost">›</button></div>` +
+    '<div id="calGrid">';
+  for (const w of 'SMTWTFS') html += `<span class="wd">${w}</span>`;
+  for (let i = 0; i < startDay; i++) html += '<span></span>';
+  for (let d = 1; d <= daysIn; d++) {
+    const ds = `${calY}-${pad(calM + 1)}-${pad(d)}`;
+    html += `<span class="day${ds === todayStr ? ' today' : ''}` +
+      `${dates.has(ds) ? ' has' : ''}" data-d="${ds}">${d}</span>`;
+  }
+  html += '</div>';
+  $('calWrap').innerHTML = html;
+  $('calPrev').onclick = () => { if (--calM < 0) { calM = 11; calY--; } renderCal(notes); };
+  $('calNext').onclick = () => { if (++calM > 11) { calM = 0; calY++; } renderCal(notes); };
+  $('calGrid').querySelectorAll('.day').forEach(el =>
+    el.onclick = () => openDay(new Date(el.dataset.d + 'T12:00:00'), true));
 }
 function markTreeCur() {
   document.querySelectorAll('#tree .file').forEach(f =>
@@ -394,5 +428,16 @@ document.addEventListener('keydown', e => {
     if (await readNote(p)) tabs.push({ path: p });
   curTab = Math.min(savedCur, Math.max(tabs.length - 1, 0));
   if (tabs.length) await openNote(tabs[curTab].path);
-  else await openDay(new Date());
+  else {
+    /* no auto-create — open today's note only if it already exists,
+       else show the empty state until the user acts */
+    const p = dayPath(new Date());
+    if (await readNote(p)) await openNote(p, true);
+    else {
+      $('empty').hidden = false;
+      ta.hidden = true;
+      $('preview').hidden = true;
+      renderTabs();
+    }
+  }
 })();

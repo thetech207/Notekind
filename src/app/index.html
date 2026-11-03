@@ -13,6 +13,7 @@
       <button id="today">Today</button>
       <button id="newNote" class="ghost">+ Note</button>
     </div>
+    <div id="calWrap"></div>
     <div id="tree"></div>
     <div id="vaultBar"></div>
     <details id="debug">
@@ -37,6 +38,8 @@
     </div>
     <textarea id="editor" spellcheck="true" placeholder="Start writing…"></textarea>
     <div id="preview" hidden></div>
+    <div id="empty" hidden><div>No note open — press <b>Today</b>, pick a day on the
+      calendar, or open a note (Alt+O).</div></div>
   </main>
   <div id="quick" hidden>
     <input id="qInput" placeholder="Quick open — type a note name…" autocomplete="off">

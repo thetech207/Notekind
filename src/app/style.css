@@ -53,6 +53,23 @@ code { background: #111417; padding: 1px 5px; border-radius: 4px; font-size: 12p
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tree .file:hover { background: #2e333a; }
 #tree .file.cur { background: #3a4048; color: var(--accent); }
+#calWrap { padding: 0 10px 8px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+#calHead { display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 0; font-size: 13px; }
+#calHead button { padding: 1px 8px; font-size: 13px; }
+#calGrid { display: grid; grid-template-columns: repeat(7, 1fr);
+  text-align: center; font-size: 12px; }
+#calGrid .wd { color: var(--dim); font-size: 10px; padding: 2px 0; }
+#calGrid .day { padding: 3px 0; border-radius: 4px; cursor: pointer; position: relative; }
+#calGrid .day:hover { background: #2e333a; }
+#calGrid .day.today { color: var(--accent); font-weight: 700; }
+#calGrid .day.has::after {
+  content: ''; position: absolute; bottom: 1px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--accent);
+}
+#empty { flex: 1; display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 14px; text-align: center; padding: 40px; }
 #vaultBar {
   border-top: 1px solid var(--border);
   padding: 8px 14px;
