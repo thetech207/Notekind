@@ -16,9 +16,20 @@
     html = d.innerHTML;
     isSel = true;
   } else {
-    /* Readability is tuned for articles — on product/app pages it can
-       extract a confident fragment. Only accept it if the page looks
-       article-like AND it kept a decent share of the body's text. */
+    /* crude main-content grab first — our baseline */
+    const root = document.querySelector('article') ||
+                 document.querySelector('main') || document.body;
+    const clone = root.cloneNode(true);
+    clone.querySelectorAll(
+      'script,style,noscript,iframe,svg,form,button,input,select,' +
+      'nav,[role=navigation],[role=banner],[role=contentinfo],' +
+      'header,footer,aside,.ad,.ads,.advert,[class*=cookie],[id*=cookie]'
+    ).forEach(n => n.remove());
+    const grabLen = clone.textContent.trim().length;
+
+    /* Readability is article-tuned — it only wins when it clearly
+       captured the page: keep ≥60% of the crude grab's text or it
+       extracted a fragment and the crude grab wins instead */
     let art = null;
     if (typeof Readability === 'function') {
       try {
@@ -28,26 +39,14 @@
       } catch {}
     }
     const artLen = (art?.textContent || '').trim().length;
-    const bodyLen = document.body.innerText.trim().length;
-    if (art && art.content && artLen > Math.min(800, bodyLen * 0.3)) {
+    if (art && art.content && artLen >= Math.max(400, grabLen * 0.6)) {
       html = art.content;
       title = art.title || title;
       meta.byline = art.byline;
       meta.excerpt = art.excerpt;
+    } else {
+      html = clone.innerHTML;
     }
-  }
-
-  /* Readability failed/rejected → crude main-content grab */
-  if (!html) {
-    const root = document.querySelector('article') ||
-                 document.querySelector('main') || document.body;
-    const clone = root.cloneNode(true);
-    clone.querySelectorAll(
-      'script,style,noscript,iframe,svg,form,button,input,select,' +
-      'nav,[role=navigation],[role=banner],[role=contentinfo],' +
-      'header,footer,aside,.ad,.ads,.advert,[class*=cookie],[id*=cookie]'
-    ).forEach(n => n.remove());
-    html = clone.innerHTML;
   }
 
   let body = null;
