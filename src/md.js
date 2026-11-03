@@ -5,7 +5,7 @@
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const EMOJI = {
+export const EMOJI = {
   star: '⭐', fire: '🔥', alarm: '⏰',
   calendar: '📅', email: '✉️', phone: '📞',
   car: '🚗', pin: '📍', home: '🏠', money: '💰'

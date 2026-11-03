@@ -35,6 +35,8 @@
       <span id="status"></span>
       <button id="prevBtn" class="ghost" title="Toggle preview (Alt+P)">Preview</button>
       <button id="quickBtn" class="ghost" title="Quick open (Alt+O / Ctrl+P)">Open…</button>
+      <button id="searchBtn" class="ghost" title="Search notes (Ctrl+Shift+F)">Search</button>
+      <button id="printBtn" class="ghost" title="Print">Print</button>
     </div>
     <textarea id="editor" spellcheck="true" placeholder="Start writing…"></textarea>
     <div id="preview" hidden></div>
@@ -45,6 +47,12 @@
     <input id="qInput" placeholder="Quick open — type a note name…" autocomplete="off">
     <div id="qList"></div>
   </div>
+  <div id="search" hidden>
+    <input id="sInput" placeholder="Search note contents…" autocomplete="off">
+    <div id="sList"></div>
+  </div>
+  <div id="ctxMenu" hidden></div>
+  <div id="emoji" hidden></div>
   <script type="module" src="app.js"></script>
 </body>
 </html>

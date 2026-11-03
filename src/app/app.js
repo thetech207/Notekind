@@ -1,7 +1,7 @@
-import { idbGet, idbSet, idbDel } from '../idb.js';
-import { writeNote, readNote, listNotes, vaultState, mirrorAll,
+import { idbGet, idbSet, idbDel, dbAll, STORES } from '../idb.js';
+import { writeNote, readNote, listNotes, deleteNote, vaultState, mirrorAll,
          importVault, exportZip, getBlob, putBlob } from '../store.js';
-import { md } from '../md.js';
+import { md, EMOJI } from '../md.js';
 import { dayPath, dayLabel, isDateName, dateNamePath, MONTHS, pad } from '../dates.js';
 import { attach } from '../editor.js';
 
@@ -173,6 +173,7 @@ function renderNode(node, prefix, depth, el) {
     f.title = p;
     f.onclick = e => openNote(p, undefined, e.ctrlKey || e.metaKey);
     f.onauxclick = e => { if (e.button === 1) openNote(p, undefined, true); };
+    f.oncontextmenu = e => { e.preventDefault(); showCtx(e, p, false); };
     el.appendChild(f);
   }
 }
@@ -181,9 +182,89 @@ async function refreshTree() {
   const notes = await rebuildIndex();
   const tree = $('tree');
   tree.textContent = '';
-  renderNode(nest(notes.map(n => n.path)), '', 0, tree);
+  const shown = notes.map(n => n.path).filter(p => !p.startsWith('.'));
+  renderNode(nest(shown), '', 0, tree);
+  /* trash section: notes under .trash/ get Restore/Purge ops */
+  const trashed = notes.map(n => n.path).filter(p => p.startsWith('.trash/'));
+  if (trashed.length) {
+    const t = document.createElement('div');
+    t.className = 'dir' + (openDirs.has('.trash') ? ' open' : '');
+    t.textContent = '🗑 Trash (' + trashed.length + ')';
+    t.onclick = () => {
+      openDirs.has('.trash') ? openDirs.delete('.trash') : openDirs.add('.trash');
+      persistDirs(); refreshTree();
+    };
+    tree.appendChild(t);
+    if (openDirs.has('.trash'))
+      for (const p of trashed.sort()) {
+        const f = document.createElement('div');
+        f.className = 'file';
+        f.style.paddingLeft = '18px';
+        f.textContent = p.slice(7).split('/').pop().replace(/\.md$/, '');
+        f.title = p;
+        f.onclick = () => openNote(p);
+        f.oncontextmenu = e => { e.preventDefault(); showCtx(e, p, true); };
+        tree.appendChild(f);
+      }
+  }
   renderCal(notes);
 }
+
+/* ---------- tree context menu ---------- */
+
+function showCtx(e, path, trashed) {
+  const m = $('ctxMenu');
+  m.innerHTML = '';
+  const item = (label, fn, danger) => {
+    const d = document.createElement('div');
+    d.className = 'mi' + (danger ? ' danger' : '');
+    d.textContent = label;
+    d.onclick = async () => { m.hidden = true; await fn(); };
+    m.appendChild(d);
+  };
+  item('Open in new tab', () => openNote(path, true, true));
+  if (!trashed) {
+    item('Rename…', async () => {
+      const nn = prompt('New path:', path);
+      if (!nn || nn === path) return;
+      const rec = await readNote(path);
+      if (!rec) return;
+      const np = nn.endsWith('.md') ? nn : nn + '.md';
+      await writeNote(np, rec.text);
+      await deleteNote(path);
+      if (curPath === path) curPath = np;
+      await refreshTree();
+      renderTabs();
+    });
+    item('Move to trash', async () => {
+      const rec = await readNote(path);
+      if (!rec) return;
+      await writeNote('.trash/' + path, rec.text, { mirror: false });
+      await deleteNote(path);
+      await refreshTree();
+    }, true);
+  } else {
+    item('Restore', async () => {
+      const rec = await readNote(path);
+      if (!rec) return;
+      await writeNote(path.slice(7), rec.text);
+      await deleteNote(path);
+      await refreshTree();
+    });
+    item('Delete forever', async () => {
+      if (confirm('Permanently delete ' + path + '?')) {
+        await deleteNote(path);
+        await refreshTree();
+      }
+    }, true);
+  }
+  m.style.left = Math.min(e.clientX, innerWidth - 180) + 'px';
+  m.style.top = Math.min(e.clientY, innerHeight - 160) + 'px';
+  m.hidden = false;
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ctxMenu')) $('ctxMenu').hidden = true;
+});
 
 /* ---------- calendar ---------- */
 
@@ -441,10 +522,150 @@ $('quick').addEventListener('click', e => { if (e.target === $('quick')) closeQu
 $('quickBtn').onclick = openQuick;
 $('newTab').onclick = () => openDay(new Date(), true);
 
+/* ---------- full-text search (Ctrl+Shift+F) ---------- */
+
+function openSearch() {
+  $('search').hidden = false;
+  $('sInput').value = '';
+  $('sList').innerHTML = '<div class="none">type to search note contents</div>';
+  $('sInput').focus();
+}
+function closeSearch() { $('search').hidden = true; ta.focus(); }
+
+const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let sTimer = null;
+$('sInput').addEventListener('input', () => {
+  clearTimeout(sTimer);
+  sTimer = setTimeout(renderSearch, 150);
+});
+async function renderSearch() {
+  const q = $('sInput').value.trim();
+  const el = $('sList');
+  if (q.length < 2) { el.innerHTML = '<div class="none">type to search note contents</div>'; return; }
+  const ql = q.toLowerCase();
+  const notes = await dbAll(STORES.notes);
+  const rows = [];
+  for (const n of notes) {
+    if (n.path.startsWith('.trash/')) continue;
+    const hits = [];
+    for (const line of n.text.split('\n')) {
+      const i = line.toLowerCase().indexOf(ql);
+      if (i !== -1) {
+        hits.push(escHtml(line.slice(Math.max(0, i - 30), i + q.length + 50))
+          .replace(new RegExp(escHtml(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+                   m => `<mark>${m}</mark>`));
+        if (hits.length >= 3) break;
+      }
+    }
+    if (hits.length) rows.push({ path: n.path, hits });
+  }
+  el.textContent = '';
+  if (!rows.length) { el.innerHTML = '<div class="none">no matches</div>'; return; }
+  for (const r of rows) {
+    const d = document.createElement('div');
+    d.className = 's';
+    const base = r.path.split('/').pop().replace(/\.md$/, '');
+    const label = isDateName(base) ? dayLabel(new Date(base + 'T12:00:00')) : base;
+    d.innerHTML = `<span class="n">${escHtml(label)}</span>` +
+      r.hits.map(h => `<span class="sn">…${h}…</span>`).join('');
+    d.onclick = () => { closeSearch(); openNote(r.path); };
+    el.appendChild(d);
+  }
+}
+$('sInput').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
+});
+$('search').addEventListener('click', e => { if (e.target === $('search')) closeSearch(); });
+$('searchBtn').onclick = openSearch;
+
+/* ---------- emoji popup ---------- */
+
+const emEl = $('emoji');
+let emList = [], emSel = 0, emFrom = 0;
+
+/* caret pixel position in the textarea via a mirror div */
+function caretXY() {
+  const cs = getComputedStyle(ta);
+  const d = document.createElement('div');
+  for (const p of ['fontFamily','fontSize','lineHeight','letterSpacing',
+      'paddingTop','paddingRight','paddingBottom','paddingLeft','boxSizing'])
+    d.style[p] = cs[p];
+  const r = ta.getBoundingClientRect();
+  d.style.cssText += ';position:fixed;visibility:hidden;white-space:pre-wrap;' +
+    `overflow-wrap:break-word;width:${r.width}px;left:${r.left}px;top:${r.top}px;`;
+  d.textContent = ta.value.slice(0, ta.selectionStart);
+  const mk = document.createElement('span');
+  mk.textContent = 'x';
+  d.appendChild(mk);
+  document.body.appendChild(d);
+  const pos = { x: r.left + mk.offsetLeft - ta.scrollLeft,
+                y: r.top + mk.offsetTop - ta.scrollTop };
+  d.remove();
+  return pos;
+}
+
+function emClose() { emEl.hidden = true; emList = []; }
+function emCheck() {
+  const m = ta.value.slice(0, ta.selectionStart).match(/:([a-z_]{2,})$/);
+  if (!m) return emClose();
+  emList = Object.keys(EMOJI).filter(k => k.startsWith(m[1])).slice(0, 8);
+  if (!emList.length) return emClose();
+  emSel = 0; emFrom = m[1].length;
+  emEl.innerHTML = '';
+  emList.forEach((k, i) => {
+    const d = document.createElement('div');
+    d.className = 'em' + (i === emSel ? ' sel' : '');
+    d.innerHTML = `${EMOJI[k]}<span class="n">${k}</span>`;
+    d.onclick = () => emPick(i);
+    emEl.appendChild(d);
+  });
+  const p = caretXY();
+  emEl.style.left = Math.min(p.x, innerWidth - 140) + 'px';
+  emEl.style.top = (p.y + 22) + 'px';
+  emEl.hidden = false;
+}
+function emPick(i) {
+  const name = emList[i ?? emSel];
+  const ins = ':' + name + ':';
+  const start = ta.selectionStart - emFrom;
+  ta.value = ta.value.slice(0, start) + ins + ta.value.slice(ta.selectionEnd);
+  ta.selectionStart = ta.selectionEnd = start + ins.length;
+  emClose();
+  ta.dispatchEvent(new Event('input'));
+}
+ta.addEventListener('input', emCheck);
+ta.addEventListener('keydown', e => {
+  if (emEl.hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); emClose(); }
+  else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'Tab') {
+    e.preventDefault(); emSel = (emSel + 1) % emList.length;
+    emEl.querySelectorAll('.em').forEach((d, i) => d.classList.toggle('sel', i === emSel));
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault(); emSel = (emSel + emList.length - 1) % emList.length;
+    emEl.querySelectorAll('.em').forEach((d, i) => d.classList.toggle('sel', i === emSel));
+  } else if (e.key === 'Enter') { e.preventDefault(); emPick(); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('#emoji') && e.target !== ta) emClose(); });
+
+/* ---------- print ---------- */
+
+$('printBtn').onclick = () => {
+  const pv = $('preview');
+  const wasHidden = pv.hidden;
+  if (wasHidden) { renderPreview(); pv.hidden = false; ta.hidden = true; }
+  setTimeout(() => {
+    window.print();
+    if (wasHidden) { pv.hidden = true; ta.hidden = false; }
+  }, 50);
+};
+
 /* ---------- global shortcuts ---------- */
 
 document.addEventListener('keydown', e => {
-  if (!$('quick').hidden) return;   /* modal owns keys while open */
+  if (!$('quick').hidden || !$('search').hidden) return;   /* modal owns keys */
+  if (e.ctrlKey && e.shiftKey && e.code === 'KeyF') {
+    e.preventDefault(); openSearch(); return;
+  }
   /* Ctrl+E is browser-reserved (omnibox) — page may never see it;
      Alt+P is the reliable fallback. Same for Ctrl+P vs Alt+O. */
   if ((e.ctrlKey && e.code === 'KeyE') || (e.altKey && e.code === 'KeyP')) {
