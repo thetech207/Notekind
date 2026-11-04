@@ -202,7 +202,7 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   border-radius: 0 0 8px 8px; }
 #sList .s { padding: 8px 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
 #sList .s:last-child { border-bottom: 0; }
-#sList .s:hover { background: #2e333a; }
+#sList .s:hover, #sList .s.sel { background: #3a4048; }
 #sList .s .n { font-size: 14px; }
 #sList .s .sn { display: block; font-size: 12px; color: var(--dim);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

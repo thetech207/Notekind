@@ -601,7 +601,19 @@ function openSearch() {
 function closeSearch() { $('search').hidden = true; ta.focus(); }
 
 const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-let sTimer = null;
+let sTimer = null, sRows = [], sSel = 0;
+
+function markSel() {
+  $('sList').querySelectorAll('.s').forEach((d, i) => {
+    d.classList.toggle('sel', i === sSel);
+    if (i === sSel) d.scrollIntoView({ block: 'nearest' });
+  });
+}
+function openResult(r) {
+  const q = $('sInput').value.trim();
+  closeSearch();
+  openNote(r.path).then(() => jumpToMatch(q));
+}
 $('sInput').addEventListener('input', () => {
   clearTimeout(sTimer);
   sTimer = setTimeout(renderSearch, 150);
@@ -628,6 +640,8 @@ async function renderSearch() {
     if (hits.length) rows.push({ path: n.path, hits });
   }
   el.textContent = '';
+  sRows = rows;
+  sSel = 0;
   if (!rows.length) { el.innerHTML = '<div class="none">no matches</div>'; return; }
   for (const r of rows) {
     const d = document.createElement('div');
@@ -636,13 +650,10 @@ async function renderSearch() {
     const label = isDateName(base) ? dayLabel(new Date(base + 'T12:00:00')) : base;
     d.innerHTML = `<span class="n">${escHtml(label)}</span>` +
       r.hits.map(h => `<span class="sn">…${h}…</span>`).join('');
-    d.onclick = () => {
-      const q = $('sInput').value.trim();
-      closeSearch();
-      openNote(r.path).then(() => jumpToMatch(q));
-    };
+    d.onclick = () => openResult(r);
     el.appendChild(d);
   }
+  markSel();
 }
 
 /* after opening, scroll the preview to the first match and flash it */
@@ -665,6 +676,18 @@ function jumpToMatch(q) {
 }
 $('sInput').addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.preventDefault(); closeSearch(); }
+  else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    sSel = Math.min(sSel + 1, sRows.length - 1);
+    markSel();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    sSel = Math.max(sSel - 1, 0);
+    markSel();
+  } else if (e.key === 'Enter' && sRows[sSel]) {
+    e.preventDefault();
+    openResult(sRows[sSel]);
+  }
 });
 $('search').addEventListener('click', e => { if (e.target === $('search')) closeSearch(); });
 $('searchBtn').onclick = openSearch;
