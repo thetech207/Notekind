@@ -41,6 +41,10 @@ journal + web clipper. Sister project to Tektite
   Notekind's override loads on every new tab; the in-app `openOnNewTab`
   flag still governs journal-vs-splash. Fallback for other Chromiums or
   older Vivaldi: Specific Page → chrome-extension://<id>/src/app/index.html.
+  **Side panel**: manifest `side_panel` is ignored by Vivaldi (its
+  right-click action menu has no "Open side panel") — the native
+  equivalent is Vivaldi Web Panels: sidebar "+" → the extension URL.
+  Chrome-family browsers get the real side panel from the manifest key.
 - **Popup gotcha**: never put the picker in a toolbar `action` popup —
   popups close when a file picker opens. Use the new-tab page, side
   panel, or options page for vault selection.
