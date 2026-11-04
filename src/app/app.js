@@ -125,6 +125,25 @@ async function closeTab(i) {
   if (wasCur) await openNote(tabs[curTab].path);
 }
 
+/* Remove a path from open tabs before deleting/moving it — otherwise
+   the pending autosave rewrites curPath and resurrects the note. */
+async function dropTabsWithPath(path) {
+  clearTimeout(saveTimer);
+  const wasCur = curPath === path;
+  tabs = tabs.filter(t => t.path !== path);
+  if (curTab >= tabs.length) curTab = tabs.length - 1;
+  persistTabs(); renderTabs();
+  if (!tabs.length) {
+    curPath = null;
+    $('empty').hidden = false;
+    ta.hidden = true;
+    $('preview').hidden = true;
+    $('notePath').textContent = '';
+    return;
+  }
+  if (wasCur) await openNote(tabs[curTab].path);
+}
+
 /* ---------- tree ---------- */
 
 function nest(paths) {
@@ -241,15 +260,18 @@ function showCtx(e, path, trashed) {
       const rec = await readNote(path);
       if (!rec) return;
       const np = nn.endsWith('.md') ? nn : nn + '.md';
+      clearTimeout(saveTimer);
       await writeNote(np, rec.text);
       await deleteNote(path);
+      for (const t of tabs) if (t.path === path) t.path = np;
       if (curPath === path) curPath = np;
+      persistTabs(); renderTabs();
       await refreshTree();
-      renderTabs();
     });
     item('Move to trash', async () => {
       const rec = await readNote(path);
       if (!rec) return;
+      await dropTabsWithPath(path);
       await writeNote('.trash/' + path, rec.text, { mirror: false });
       await deleteNote(path);
       await refreshTree();
@@ -263,6 +285,7 @@ function showCtx(e, path, trashed) {
       await refreshTree();
     });
     item('Delete forever', async () => {
+      await dropTabsWithPath(path);
       await deleteNote(path);
       await refreshTree();
     }, true);
