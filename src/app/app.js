@@ -324,8 +324,44 @@ function renderCal(notes) {
   $('calWrap').innerHTML = html;
   $('calPrev').onclick = () => { if (--calM < 0) { calM = 11; calY--; } renderCal(notes); };
   $('calNext').onclick = () => { if (++calM > 11) { calM = 0; calY++; } renderCal(notes); };
-  $('calGrid').querySelectorAll('.day').forEach(el =>
-    el.onclick = () => openDay(new Date(el.dataset.d + 'T12:00:00'), true));
+  $('calGrid').querySelectorAll('.day').forEach(el => {
+    el.onclick = () => openDay(new Date(el.dataset.d + 'T12:00:00'), true);
+    el.oncontextmenu = e => {
+      e.preventDefault();
+      const m = $('ctxMenu');
+      m.innerHTML = '';
+      const d = document.createElement('div');
+      d.className = 'mi';
+      d.textContent = 'Carry over tasks → next day';
+      d.onclick = async () => { m.hidden = true; await carryOver(el.dataset.d); };
+      m.appendChild(d);
+      m.style.left = Math.min(e.clientX, innerWidth - 180) + 'px';
+      m.style.top = Math.min(e.clientY, innerHeight - 160) + 'px';
+      m.hidden = false;
+    };
+  });
+}
+
+/* Copy a day's unchecked tasks into the next day's note (deduped,
+   under ## To do if present) — Tektite's carryOverTasks. */
+async function carryOver(dateStr) {
+  const rec = await readNote(dateNamePath(dateStr));
+  if (!rec) return;
+  const tasks = rec.text.split('\n').filter(l => /^\s*[-*+]\s+\[ \]/.test(l));
+  if (!tasks.length) return;
+  const next = new Date(dateStr + 'T12:00:00');
+  next.setDate(next.getDate() + 1);
+  const np = dayPath(next);
+  const dst = await readNote(np);
+  let text = dst ? dst.text : '# ' + dayLabel(next) + '\n\n';
+  const toAdd = tasks.filter(t => !text.includes(t));
+  if (!toAdd.length) return;
+  text = /^## To do/m.test(text)
+    ? text.replace(/(^## To do[^\n]*\n)/m, '$1' + toAdd.join('\n') + '\n')
+    : text.replace(/\s*$/, '') + '\n\n## To do\n' + toAdd.join('\n') + '\n';
+  await writeNote(np, text);
+  await refreshTree();
+  log(`carried ${toAdd.length} task(s) → ${np}`);
 }
 function markTreeCur() {
   document.querySelectorAll('#tree .file').forEach(f =>
@@ -600,8 +636,31 @@ async function renderSearch() {
     const label = isDateName(base) ? dayLabel(new Date(base + 'T12:00:00')) : base;
     d.innerHTML = `<span class="n">${escHtml(label)}</span>` +
       r.hits.map(h => `<span class="sn">…${h}…</span>`).join('');
-    d.onclick = () => { closeSearch(); openNote(r.path); };
+    d.onclick = () => {
+      const q = $('sInput').value.trim();
+      closeSearch();
+      openNote(r.path).then(() => jumpToMatch(q));
+    };
     el.appendChild(d);
+  }
+}
+
+/* after opening, scroll the preview to the first match and flash it */
+function jumpToMatch(q) {
+  const ql = (q || '').toLowerCase();
+  if (!ql) return;
+  const pv = $('preview');
+  const w = document.createTreeWalker(pv, NodeFilter.SHOW_TEXT);
+  let n;
+  while (n = w.nextNode()) {
+    if (n.textContent.toLowerCase().includes(ql)) {
+      const el = n.parentElement;
+      el.scrollIntoView({ block: 'center' });
+      el.style.outline = '2px solid var(--accent)';
+      el.style.borderRadius = '4px';
+      setTimeout(() => { el.style.outline = ''; el.style.borderRadius = ''; }, 1600);
+      return;
+    }
   }
 }
 $('sInput').addEventListener('keydown', e => {
@@ -690,6 +749,17 @@ $('printBtn').onclick = () => {
     if (wasHidden) { pv.hidden = true; ta.hidden = false; }
   }, 50);
 };
+
+/* ---------- help ---------- */
+
+$('helpBtn').onclick = () => {
+  $('hVer').textContent = 'v' + chrome.runtime.getManifest().version;
+  $('help').hidden = false;
+};
+$('help').addEventListener('click', e => { if (e.target === $('help')) $('help').hidden = true; });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('help').hidden) $('help').hidden = true;
+});
 
 /* ---------- global shortcuts ---------- */
 

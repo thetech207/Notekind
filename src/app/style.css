@@ -233,6 +233,21 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 ::-webkit-scrollbar-track { background: transparent; }
 * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 
+/* help card */
+#help { position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 50; }
+#help[hidden] { display: none; }
+.hCard { width: min(560px, 92vw); max-height: 80vh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px 24px; }
+.hCard h3 { margin: 0 0 6px; }
+.hCard h4 { margin: 14px 0 6px; color: var(--dim); font-size: 12px;
+  text-transform: uppercase; letter-spacing: .05em; }
+.hCard p { font-size: 13px; line-height: 1.5; }
+.hCard table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hCard td { padding: 3px 8px 3px 0; color: var(--text); }
+.hCard td:nth-child(even) { color: var(--dim); }
+
 /* print: preview only */
 @media print {
   #side, #tabbar, #topbar, #editor, #empty, #debug, #ctxMenu, #emoji { display: none !important; }

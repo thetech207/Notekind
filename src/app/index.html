@@ -43,6 +43,7 @@
       <button id="quickBtn" class="ghost" title="Quick open (Alt+O / Ctrl+P)">Open…</button>
       <button id="searchBtn" class="ghost" title="Search notes (Ctrl+Shift+F)">Search</button>
       <button id="printBtn" class="ghost" title="Print">Print</button>
+      <button id="helpBtn" class="ghost" title="Help">?</button>
     </div>
     <textarea id="editor" spellcheck="true" placeholder="Start writing…"></textarea>
     <div id="preview" hidden></div>
@@ -59,6 +60,28 @@
   </div>
   <div id="ctxMenu" hidden></div>
   <div id="emoji" hidden></div>
+  <div id="help" hidden><div class="hCard">
+    <h3>💡 Notekind <span id="hVer" class="dim"></span></h3>
+    <p class="dim">Local-first markdown journal. Notes live in browser
+    storage; plain <code>.md</code> via vault sync or export.</p>
+    <h4>Syntax</h4>
+    <table>
+      <tr><td><code># heading</code></td><td><code>**bold**</code></td><td><code>*italic*</code></td></tr>
+      <tr><td><code>~~del~~</code></td><td><code>==mark==</code></td><td><code>`code`</code></td></tr>
+      <tr><td><code>- [ ] task</code></td><td><code>1. list</code></td><td><code>&gt; quote</code></td></tr>
+      <tr><td><code>[[wikilink]]</code></td><td><code>![[img|WxH]]</code></td><td><code>:name:</code> emoji</td></tr>
+      <tr><td><code>``` fence</code></td><td><code>| table |</code></td><td><code>---</code> hr</td></tr>
+    </table>
+    <h4>Shortcuts</h4>
+    <table>
+      <tr><td><code>Alt+P</code></td><td>preview / edit</td><td><code>Ctrl+S</code></td><td>save</td></tr>
+      <tr><td><code>Alt+O</code></td><td>quick open</td><td><code>Ctrl+Shift+F</code></td><td>search</td></tr>
+      <tr><td><code>Tab</code> / <code>Shift+Tab</code></td><td>indent list</td><td><code>:</code></td><td>emoji popup</td></tr>
+      <tr><td><code>Enter</code></td><td>continue list</td><td><code>Ctrl+click</code> tree</td><td>new tab</td></tr>
+    </table>
+    <p class="dim">Right-click tree files for rename/trash; calendar days
+    for task carry-over. Ctrl+E/Ctrl+P are browser-reserved.</p>
+  </div></div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
