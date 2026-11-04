@@ -220,7 +220,17 @@ function showCtx(e, path, trashed) {
     const d = document.createElement('div');
     d.className = 'mi' + (danger ? ' danger' : '');
     d.textContent = label;
-    d.onclick = async () => { m.hidden = true; await fn(); };
+    d.onclick = async () => {
+      /* destructive items arm on first click — confirm()/prompt() are
+         unreliable on extension pages in some Chromium builds */
+      if (danger && !d.dataset.armed) {
+        d.dataset.armed = '1';
+        d.textContent = 'Sure? Click again';
+        return;
+      }
+      m.hidden = true;
+      try { await fn(); } catch (e) { log(`failed: ${e.message}`); }
+    };
     m.appendChild(d);
   };
   item('Open in new tab', () => openNote(path, true, true));
@@ -253,10 +263,8 @@ function showCtx(e, path, trashed) {
       await refreshTree();
     });
     item('Delete forever', async () => {
-      if (confirm('Permanently delete ' + path + '?')) {
-        await deleteNote(path);
-        await refreshTree();
-      }
+      await deleteNote(path);
+      await refreshTree();
     }, true);
   }
   m.style.left = Math.min(e.clientX, innerWidth - 180) + 'px';
