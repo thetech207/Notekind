@@ -12,6 +12,7 @@
     "newtab": "src/app/index.html"
   },
   "side_panel": { "default_path": "src/app/index.html" },
+  "options_ui": { "page": "src/options.html", "open_in_tab": true },
   "permissions": ["storage", "contextMenus", "downloads", "scripting", "activeTab", "alarms"],
   "action": {
     "default_title": "Open Notekind"

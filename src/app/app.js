@@ -841,12 +841,9 @@ function revealPath(path) {
     };
     return;
   }
-  const cb = $('setNewTab');
-  cb.checked = true;
-  cb.onchange = () => idbSet('openOnNewTab', cb.checked);
-  const bb = $('setBackup');
-  bb.checked = (await idbGet('backupEnabled')) !== false;
-  bb.onchange = () => idbSet('backupEnabled', bb.checked);
+  const fs = await idbGet('editorFontSize');
+  if (fs) ta.style.fontSize = fs + 'px';
+  $('setBtn').onclick = () => chrome.runtime.openOptionsPage();
   await refreshTree();
   await refreshVault();
   const saved = (await idbGet('openTabs')) || [];
