@@ -68,7 +68,7 @@ export const getBlob = p => dbGet(STORES.blobs, p);
 
 /* ---------- vault mirror ---------- */
 
-async function mirrorWrite(dir, path, contents) {
+export async function mirrorWrite(dir, path, contents) {
   const parts = path.split('/');
   let d = dir;
   for (const p of parts.slice(0, -1))

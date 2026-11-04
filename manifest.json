@@ -11,7 +11,8 @@
   "chrome_url_overrides": {
     "newtab": "src/app/index.html"
   },
-  "permissions": ["storage", "contextMenus", "downloads", "scripting", "activeTab"],
+  "side_panel": { "default_path": "src/app/index.html" },
+  "permissions": ["storage", "contextMenus", "downloads", "scripting", "activeTab", "alarms"],
   "action": {
     "default_title": "Open Notekind"
   },

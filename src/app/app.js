@@ -686,6 +686,10 @@ chrome.storage.onChanged.addListener(ch => {
            : `clip failed: ${c.reason}`);
   if (c.ok) revealPath(c.path);
   refreshTree();
+  if (ch.nkBackup) {
+    const b = ch.nkBackup.newValue;
+    log(b.ok ? `backup → ${b.name} (${b.via})` : `backup failed: ${b.reason}`);
+  }
 });
 
 /* expand all ancestor dirs of a path so its file is visible */
@@ -716,6 +720,9 @@ function revealPath(path) {
   const cb = $('setNewTab');
   cb.checked = true;
   cb.onchange = () => idbSet('openOnNewTab', cb.checked);
+  const bb = $('setBackup');
+  bb.checked = (await idbGet('backupEnabled')) !== false;
+  bb.onchange = () => idbSet('backupEnabled', bb.checked);
   await refreshTree();
   await refreshVault();
   const saved = (await idbGet('openTabs')) || [];
