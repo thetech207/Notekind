@@ -699,6 +699,23 @@ function revealPath(path) {
 /* ---------- boot ---------- */
 
 (async () => {
+  /* new-tab gate: the manifest override can't be disabled at runtime,
+     so honor the setting here — off means a minimal splash */
+  if ((await idbGet('openOnNewTab')) === false) {
+    document.body.innerHTML =
+      '<div style="margin:25vh auto;max-width:360px;text-align:center;color:var(--dim)">' +
+      '<div style="font-size:40px">&#x1F4A1;</div>' +
+      '<p><a id="re" href="#" style="color:var(--accent)">Open Notekind</a></p></div>';
+    $('re').onclick = async e => {
+      e.preventDefault();
+      await idbSet('openOnNewTab', true);
+      location.reload();
+    };
+    return;
+  }
+  const cb = $('setNewTab');
+  cb.checked = true;
+  cb.onchange = () => idbSet('openOnNewTab', cb.checked);
   await refreshTree();
   await refreshVault();
   const saved = (await idbGet('openTabs')) || [];

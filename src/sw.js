@@ -38,6 +38,11 @@ chrome.runtime.onStartup.addListener(async () => {
   });
 });
 
+/* toolbar button → open the app in a new tab */
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('src/app/index.html') });
+});
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'nk-clip-page',

@@ -13,7 +13,7 @@
   },
   "permissions": ["storage", "contextMenus", "downloads", "scripting", "activeTab"],
   "action": {
-    "default_title": "Notekind"
+    "default_title": "Open Notekind"
   },
   "icons": {
     "16": "icons/icon16.png",
