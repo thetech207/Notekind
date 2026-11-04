@@ -96,10 +96,15 @@ export async function mirrorAll(dir) {
     try { await mirrorWrite(dir, path, contents); n++; }
     catch (e) { failed.push(`${path} (${e.name})`); }
   };
-  for (const { path, text } of await dbAll(STORES.notes))
-    await tryWrite(path, text);
-  for (const { path, blob } of await dbAll(STORES.blobs))
-    await tryWrite(path, blob);
+  let notes = [], blobs = [];
+  try {
+    notes = await dbAll(STORES.notes);
+    blobs = await dbAll(STORES.blobs);
+  } catch (e) {
+    return { n: 0, failed: [`read failed: ${e.name}: ${e.message}`] };
+  }
+  for (const { path, text } of notes) await tryWrite(path, text);
+  for (const { path, blob } of blobs) await tryWrite(path, blob);
   return { n, failed };
 }
 
