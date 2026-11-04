@@ -87,16 +87,20 @@ async function mirrorDelete(dir, path) {
 }
 
 /* Mirror every note/blob out to the vault (used after enabling sync or
-   on first import to reconcile). Returns count written. */
+   on first import to reconcile). Per-file resilient — one unwritable
+   path must not abort the batch. Returns { n, failed:[paths] }. */
 export async function mirrorAll(dir) {
   let n = 0;
-  for (const { path, text } of await dbAll(STORES.notes)) {
-    await mirrorWrite(dir, path, text); n++;
-  }
-  for (const { path, blob } of await dbAll(STORES.blobs)) {
-    await mirrorWrite(dir, path, blob); n++;
-  }
-  return n;
+  const failed = [];
+  const tryWrite = async (path, contents) => {
+    try { await mirrorWrite(dir, path, contents); n++; }
+    catch (e) { failed.push(`${path} (${e.name})`); }
+  };
+  for (const { path, text } of await dbAll(STORES.notes))
+    await tryWrite(path, text);
+  for (const { path, blob } of await dbAll(STORES.blobs))
+    await tryWrite(path, blob);
+  return { n, failed };
 }
 
 /* ---------- import / export ---------- */

@@ -442,7 +442,8 @@ async function enableSync() {
   const h = await idbGet(VAULT_KEY);
   if (!h) return pickVault();
   if (await h.requestPermission({ mode: 'readwrite' }) === 'granted') {
-    log(`mirrored ${await mirrorAll(h)} item(s)`);
+    const r = await mirrorAll(h);
+    log(`mirrored ${r.n} item(s)` + (r.failed.length ? ` — failed: ${r.failed.join(', ')}` : ''));
   }
   refreshVault();
 }

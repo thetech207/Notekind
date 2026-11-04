@@ -49,8 +49,10 @@ $('pick').onclick = async () => {
 $('sync').onclick = async () => {
   const h = await idbGet(VAULT_KEY);
   if (!h) return $('pick').onclick();
-  if (await h.requestPermission({ mode: 'readwrite' }) === 'granted')
-    st(`mirrored ${await mirrorAll(h)} item(s)`);
+  if (await h.requestPermission({ mode: 'readwrite' }) === 'granted') {
+    const r = await mirrorAll(h);
+    st(`mirrored ${r.n} item(s)` + (r.failed.length ? ` — failed: ${r.failed.join(', ')}` : ''));
+  }
   refreshVault();
 };
 
