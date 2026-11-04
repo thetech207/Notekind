@@ -35,10 +35,12 @@ journal + web clipper. Sister project to Tektite
 - **Popup gotcha**: never put the picker in a toolbar `action` popup —
   popups close when a file picker opens. Use the new-tab page, side
   panel, or options page for vault selection.
-- **Vivaldi**: ignores `chrome_url_overrides.newtab` (shows its Start
-  Page). Document the "Settings → Tabs → New Tab Page → Specific Page →
-  chrome-extension://<id>/src/app/index.html" workaround; side panel /
-  action button matter more for Vivaldi coverage.
+- **Vivaldi**: `chrome_url_overrides.newtab` works but is opt-in —
+  Settings → Tabs → New Tab Page has a checkbox allowing extensions to
+  control the new tab page (verified working 2026-11-03). With it on,
+  Notekind's override loads on every new tab; the in-app `openOnNewTab`
+  flag still governs journal-vs-splash. Fallback for other Chromiums or
+  older Vivaldi: Specific Page → chrome-extension://<id>/src/app/index.html.
 - **Popup gotcha**: never put the picker in a toolbar `action` popup —
   popups close when a file picker opens. Use the new-tab page, side
   panel, or options page for vault selection.
