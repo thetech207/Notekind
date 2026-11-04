@@ -25,8 +25,8 @@ export async function writeNote(path, text, { mirror = true } = {}) {
   if (mirror) {
     const { handle, state } = await vaultState();
     if (handle && state === 'granted') {
-      await mirrorWrite(handle, path, text);
-      mirrored = true;
+      try { await mirrorWrite(handle, path, text); mirrored = true; }
+      catch { /* mirror is best-effort — never break the IDB write */ }
     }
   }
   return { stored: true, mirrored };
@@ -45,8 +45,8 @@ export async function deleteNote(path, { mirror = true } = {}) {
   if (mirror) {
     const { handle, state } = await vaultState();
     if (handle && state === 'granted') {
-      await mirrorDelete(handle, path);
-      mirrored = true;
+      try { await mirrorDelete(handle, path); mirrored = true; }
+      catch { /* file may never have been mirrored — nothing to remove */ }
     }
   }
   return { stored: true, mirrored };
@@ -58,8 +58,8 @@ export async function putBlob(p, blob, { mirror = true } = {}) {
   if (mirror) {
     const { handle, state } = await vaultState();
     if (handle && state === 'granted') {
-      await mirrorWrite(handle, p, blob);
-      mirrored = true;
+      try { await mirrorWrite(handle, p, blob); mirrored = true; }
+      catch { /* mirror is best-effort */ }
     }
   }
   return { stored: true, mirrored };
