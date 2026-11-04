@@ -841,6 +841,7 @@ function revealPath(path) {
     };
     return;
   }
+  document.documentElement.dataset.theme = (await idbGet('theme')) || 'dark';
   const fs = await idbGet('editorFontSize');
   if (fs) ta.style.fontSize = fs + 'px';
   $('setBtn').onclick = () => chrome.runtime.openOptionsPage();

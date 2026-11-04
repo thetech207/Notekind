@@ -18,6 +18,14 @@ $('ver').textContent = 'v' + chrome.runtime.getManifest().version;
 
   $('setFont').value = (await idbGet('editorFontSize')) || '';
   $('setFont').onchange = e => idbSet('editorFontSize', e.target.value || null);
+
+  const theme = (await idbGet('theme')) || 'dark';
+  document.documentElement.dataset.theme = theme;
+  $('setTheme').value = theme;
+  $('setTheme').onchange = e => {
+    idbSet('theme', e.target.value);
+    document.documentElement.dataset.theme = e.target.value;
+  };
 })();
 
 /* ---------- vault ---------- */
