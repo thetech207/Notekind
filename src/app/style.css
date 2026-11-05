@@ -162,8 +162,8 @@ main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #preview pre { background: var(--codebg); padding: 12px; border-radius: 8px; overflow: auto; }
 #preview code { background: var(--codebg); padding: 1px 5px; border-radius: 4px; }
 #preview pre code { padding: 0; }
-#preview blockquote { border-left: 3px solid var(--border); margin-left: 0;
-  padding-left: 14px; color: var(--dim); }
+#preview blockquote { border-left: 3px solid var(--accent); margin-left: 0;
+  padding: 4px 14px; color: var(--text); }
 #preview table { border-collapse: collapse; }
 #preview th, #preview td { border: 1px solid var(--border); padding: 5px 10px; }
 #preview ul, #preview ol { padding-left: 24px; }
