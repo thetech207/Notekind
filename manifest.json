@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Notekind",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local-first knowledge journal — daily notes, wikilinks, and web clipping into plain Markdown files.",
   "minimum_chrome_version": "114",
   "background": {
